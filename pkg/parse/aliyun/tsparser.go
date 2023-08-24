@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/lbbniu/aliyun-m3u8-downloader/pkg/tool"
+	"github.com/m1nule/aliyun-m3u8-downloader/pkg/tool"
 )
 
 const (
@@ -21,14 +21,14 @@ const (
 )
 
 type TSHeader struct {
-	syncByte                   byte //8
-	transportErrorIndicator    byte //1
-	payloadUnitStartIndicator  byte //1
-	transportPriority          byte //1
-	pid                        int  //13
-	transportScramblingControl byte //2
-	adaptationFiled            byte //2
-	continuityCounter          byte //4
+	syncByte                   byte // 8
+	transportErrorIndicator    byte // 1
+	payloadUnitStartIndicator  byte // 1
+	transportPriority          byte // 1
+	pid                        int  // 13
+	transportScramblingControl byte // 2
+	adaptationFiled            byte // 2
+	continuityCounter          byte // 4
 	hasError                   bool
 	isPayloadStart             bool
 	hasAdaptationFieldField    bool
@@ -106,7 +106,7 @@ func (p *TSParser) decryptPES(byteBuf []byte, pesFragments []*TSPesFragment, key
 		buffer.Reset()
 		if length%16 > 0 {
 			newLength := 16 * (length / 16)
-			//log.Println(i, len(pesFragments), length, len(encryptedBytes), len(yuBytes), yuBytes)
+			// log.Println(i, len(pesFragments), length, len(encryptedBytes), len(yuBytes), yuBytes)
 			decrypt, _ := tool.DecryptAes128Ecb(all[:newLength], key)
 			buffer.Write(decrypt)
 			buffer.Write(all[newLength:])
@@ -114,7 +114,7 @@ func (p *TSParser) decryptPES(byteBuf []byte, pesFragments []*TSPesFragment, key
 			decrypt, _ := tool.DecryptAes128Ecb(all, key)
 			buffer.Write(decrypt)
 		}
-		//Rewrite decrypted bytes to byteBuf
+		// Rewrite decrypted bytes to byteBuf
 		for _, packet := range pes.packets {
 			payloadLength := packet.payloadLength
 			payloadStartOffset := packet.payloadStartOffset
@@ -149,7 +149,7 @@ func (stream *TSStream) parseTs() {
 				pes = new(TSPesFragment)
 			}
 			pes.add(packet)
-		//audio data
+		// audio data
 		case 0x101:
 			if packet.header.isPayloadStart {
 				if nil != pes {
@@ -203,7 +203,7 @@ func (stream *TSStream) parseTSPacket(buffer []byte, packNo, offset int) *TSPack
 	packet.payloadRelativeOffset = packet.headerLength + packet.atfLength + packet.pesHeaderLength
 	packet.payloadStartOffset = int(packet.startOffset + packet.payloadRelativeOffset)
 	packet.payloadLength = PacketLength - packet.payloadRelativeOffset
-	//log.Printf("%+v", packet)
+	// log.Printf("%+v", packet)
 	if packet.payloadLength > 0 {
 		packet.payload = buffer[packet.payloadRelativeOffset:PacketLength]
 	}

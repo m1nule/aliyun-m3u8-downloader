@@ -13,13 +13,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/lbbniu/aliyun-m3u8-downloader/pkg/log"
+	"github.com/m1nule/aliyun-m3u8-downloader/pkg/log"
 	fluentffmpeg "github.com/modfy/fluent-ffmpeg"
 
 	"github.com/ddliu/go-httpclient"
-	"github.com/lbbniu/aliyun-m3u8-downloader/pkg/parse"
-	"github.com/lbbniu/aliyun-m3u8-downloader/pkg/parse/aliyun"
-	"github.com/lbbniu/aliyun-m3u8-downloader/pkg/tool"
+	"github.com/m1nule/aliyun-m3u8-downloader/pkg/parse"
+	"github.com/m1nule/aliyun-m3u8-downloader/pkg/parse/aliyun"
+	"github.com/m1nule/aliyun-m3u8-downloader/pkg/tool"
 )
 
 type MergeTsType int
@@ -131,7 +131,7 @@ func loadKeyFunc(_, keyUrl string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("download: ToString: %w", err)
 	}
-	//log.Debugf("decryption key: %s", keyStr)
+	// log.Debugf("decryption key: %s", keyStr)
 	return keyStr, err
 }
 
@@ -311,7 +311,7 @@ func (d *Downloader) download(segIndex int) error {
 	// https://en.wikipedia.org/wiki/MPEG_transport_stream
 	// Some TS files do not start with SyncByte 0x47, they can not be played after merging,
 	// Need to remove the bytes before the SyncByte 0x47(71).
-	syncByte := uint8(71) //0x47
+	syncByte := uint8(71) // 0x47
 	bLen := len(tsData)
 	for j := 0; j < bLen; j++ {
 		if tsData[j] == syncByte {
@@ -332,7 +332,7 @@ func (d *Downloader) download(segIndex int) error {
 	// Maybe it will be safer in this way...
 	atomic.AddInt32(&d.finish, 1)
 	tool.DrawProgressBar(fmt.Sprintf("downloading %d/%d", d.finish, d.segLen), float32(d.finish)/float32(d.segLen), progressWidth)
-	//log.Infof("[download %6.2f%%] %s", float32(d.finish)/float32(d.segLen)*100, tsUrl)
+	// log.Infof("[download %6.2f%%] %s", float32(d.finish)/float32(d.segLen)*100, tsUrl)
 	return nil
 }
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ddliu/go-httpclient"
-	"github.com/lbbniu/aliyun-m3u8-downloader/pkg/tool"
+	"github.com/m1nule/aliyun-m3u8-downloader/pkg/tool"
 )
 
 type LoadKeyFunc func(m3u8Url, keyUrl string) (string, error)
