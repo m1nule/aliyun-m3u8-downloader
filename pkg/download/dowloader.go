@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -123,16 +124,17 @@ func WithDecryptFunc(decryptFunc decryptFunc) DownloaderOption {
 }
 
 func loadKeyFunc(_, keyUrl string) (string, error) {
-	resp, err := httpclient.Get(keyUrl)
+	resp, err := http.Get(keyUrl)
 	if err != nil {
 		return "", fmt.Errorf("download: extract key failed: %w", err)
 	}
-	keyStr, err := resp.ToString()
+	defer resp.Body.Close()
+	keyStr, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("download: ToString: %w", err)
 	}
 	// log.Debugf("decryption key: %s", keyStr)
-	return keyStr, err
+	return string(keyStr), err
 }
 
 // NewDownloader returns a Task instance
@@ -160,11 +162,13 @@ func NewDownloader(opts ...DownloaderOption) (*Downloader, error) {
 	}
 
 	// 解析合并的最终文件名
-	if d.filename != "" {
-		d.mergeTSFilename = strings.TrimSuffix(d.filename, ".mp4") + ".mp4"
-	} else {
-		d.mergeTSFilename = d.tsFilename(d.url) + ".mp4"
-	}
+	// if d.filename != "" {
+	// 	d.mergeTSFilename = strings.TrimSuffix(d.filename, ".mp4") + ".mp4"
+	// } else {
+	// 	d.mergeTSFilename = d.tsFilename(d.url) + ".mp4"
+	// }
+
+	d.mergeTSFilename = "index.mp4"
 	if d.url == "" && d.m3u8Content == "" {
 		return nil, fmt.Errorf("donwload: url: %s and m3u8Content: %s", d.url, d.m3u8Content)
 	}
@@ -202,7 +206,7 @@ func (d *Downloader) SetDecryptFunc(decryptFunc decryptFunc) {
 }
 
 // Start runs downloader
-func (d *Downloader) Start(concurrency int) error {
+func (d *Downloader) Start(concurrency int, msg chan<- string, msgFormat string) error {
 	if d.mp4 {
 		return d.downloadMp4(d.mp4Url)
 	}
@@ -221,7 +225,8 @@ func (d *Downloader) Start(concurrency int) error {
 		limitChan <- struct{}{}
 		go func(idx int) {
 			defer wg.Done()
-			if er := d.download(idx); er != nil {
+			if er := d.download(idx, msg, msgFormat); er != nil {
+				// msg <- fmt.Sprintf(msgFormat, s)
 				// Back into the queue, retry request
 				log.Errorf("[failed] %v", er)
 				if er = d.back(idx); er != nil {
@@ -259,9 +264,9 @@ func (d *Downloader) downloadMp4(mp4Url string) error {
 	return nil
 }
 
-func (d *Downloader) download(segIndex int) error {
+func (d *Downloader) download(segIndex int, msg chan<- string, msgFormat string) error {
 	tsUrl := d.tsURL(segIndex)
-	resp, err := httpclient.Get(tsUrl)
+	resp, err := http.Get(tsUrl)
 	if err != nil {
 		return fmt.Errorf("download: request %s, %s", tsUrl, err.Error())
 	}
@@ -273,7 +278,9 @@ func (d *Downloader) download(segIndex int) error {
 	if err != nil {
 		return fmt.Errorf("download: create file: %s, %s", filename, err.Error())
 	}
-	tsData, err := resp.ReadAll()
+	// tsData, err := resp.ReadAll()
+	defer resp.Body.Close()
+	tsData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("download: read bytes: %s, %s", tsUrl, err.Error())
 	}
@@ -331,9 +338,17 @@ func (d *Downloader) download(segIndex int) error {
 	}
 	// Maybe it will be safer in this way...
 	atomic.AddInt32(&d.finish, 1)
-	tool.DrawProgressBar(fmt.Sprintf("downloading %d/%d", d.finish, d.segLen), float32(d.finish)/float32(d.segLen), progressWidth)
-	// log.Infof("[download %6.2f%%] %s", float32(d.finish)/float32(d.segLen)*100, tsUrl)
+	// tool.DrawProgressBar(fmt.Sprintf("downloading %d/%d", d.finish, d.segLen), float32(d.finish)/float32(d.segLen), progressWidth)
+	// t5 := time.Now().Second()
+	// if t5/50 == 1 {
+	setp := d.segLen / 5
+	if d.finish%int32(setp) == 0 {
+		msg <- fmt.Sprintf("%s %s", msgFormat, fmt.Sprintf("⏬【%d/%d】", d.finish, d.segLen))
+	}
+
 	return nil
+	// log.Infof("[download %6.2f%%] %s", float32(d.finish)/float32(d.segLen)*100, tsUrl)
+	// return nil
 }
 
 func (d *Downloader) next() (segIndex int, end bool, err error) {

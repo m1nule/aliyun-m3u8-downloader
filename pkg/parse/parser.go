@@ -3,10 +3,10 @@ package parse
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/ddliu/go-httpclient"
 	"github.com/m1nule/aliyun-m3u8-downloader/pkg/tool"
 )
 
@@ -23,11 +23,11 @@ func FromM3u8URL(m3u8Url string, loadKeyFunc LoadKeyFunc) (*Result, error) {
 		return nil, err
 	}
 	m3u8Url = u.String()
-	resp, err := httpclient.Get(m3u8Url)
+	resp, err := http.Get(m3u8Url)
 	if err != nil {
 		return nil, fmt.Errorf("request m3u8 URL failed: %w", err)
 	}
-	//noinspection GoUnhandledErrorResult
+	defer resp.Body.Close()
 	m3u8, err := parse(resp.Body)
 	if err != nil {
 		return nil, err

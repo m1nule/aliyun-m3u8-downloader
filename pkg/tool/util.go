@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/m1nule/aliyun-m3u8-downloader/pkg/log"
-	"k8s.io/klog/v2"
+	"github.com/zeromicro/go-zero/core/logx"
 )
 
 func CurrentDir(joinPath ...string) (string, error) {
@@ -55,5 +55,5 @@ func PrintJson(i interface{}) {
 }
 
 func PanicParameter(name string) {
-	klog.Fatalln("parameter '" + name + "' is required")
+	logx.Error("parameter '" + name + "' is required")
 }
